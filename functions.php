@@ -1,0 +1,367 @@
+<?php
+/**
+ * Broadside functions and definitions.
+ *
+ * @package Broadside
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Theme setup.
+ */
+function broadside_setup() {
+	load_theme_textdomain( 'broadside', get_template_directory() . '/languages' );
+
+	add_theme_support( 'automatic-feed-links' );
+	add_theme_support( 'title-tag' );
+	add_theme_support( 'post-thumbnails' );
+	add_theme_support(
+		'html5',
+		array( 'search-form', 'comment-form', 'comment-list', 'gallery', 'caption', 'style', 'script', 'navigation-widgets' )
+	);
+	add_theme_support( 'responsive-embeds' );
+	add_theme_support( 'align-wide' );
+	add_theme_support(
+		'custom-logo',
+		array(
+			'width'       => 320,
+			'height'      => 96,
+			'flex-width'  => true,
+			'flex-height' => true,
+		)
+	);
+
+	register_nav_menus(
+		array(
+			'topbar' => __( 'Top bar menu', 'broadside' ),
+			'footer' => __( 'Footer menu', 'broadside' ),
+		)
+	);
+
+	add_image_size( 'broadside-lead', 960, 560, true );
+
+	$GLOBALS['content_width'] = 760;
+}
+add_action( 'after_setup_theme', 'broadside_setup' );
+
+/**
+ * Widget area for the left rail.
+ */
+function broadside_widgets_init() {
+	register_sidebar(
+		array(
+			'name'          => __( 'Left rail', 'broadside' ),
+			'id'            => 'sidebar-1',
+			'description'   => __( 'Widgets in the column to the left of the reading area. Leave empty to show sections, recent entries and feeds.', 'broadside' ),
+			'before_widget' => '<section id="%1$s" class="widget %2$s">',
+			'after_widget'  => '</section>',
+			'before_title'  => '<h2 class="widget__title">',
+			'after_title'   => '</h2>',
+		)
+	);
+
+	register_sidebar(
+		array(
+			'name'          => __( 'Home band', 'broadside' ),
+			'id'            => 'home-band',
+			'description'   => __( 'Slot above the entries on the blog home, first page only. Built for a carousel, a featured story or an announcement. Leave empty to hide it.', 'broadside' ),
+			'before_widget' => '<section id="%1$s" class="widget home-band__item %2$s">',
+			'after_widget'  => '</section>',
+			'before_title'  => '<h2 class="widget__title">',
+			'after_title'   => '</h2>',
+		)
+	);
+}
+add_action( 'widgets_init', 'broadside_widgets_init' );
+
+/**
+ * Render the home band above the entry list.
+ *
+ * Prints nothing when the area is empty, so the lead story keeps the top rule.
+ */
+function broadside_home_band() {
+	if ( ! is_active_sidebar( 'home-band' ) ) {
+		return;
+	}
+
+	echo '<div class="home-band">';
+	dynamic_sidebar( 'home-band' );
+	echo '</div>';
+}
+
+/**
+ * Styles and scripts.
+ */
+function broadside_assets() {
+	$version = wp_get_theme()->get( 'Version' );
+
+	wp_enqueue_style( 'broadside-style', get_stylesheet_uri(), array(), $version );
+	wp_enqueue_style( 'broadside-main', get_template_directory_uri() . '/assets/css/main.css', array( 'broadside-style' ), $version );
+	wp_enqueue_script( 'broadside-theme', get_template_directory_uri() . '/assets/js/theme.js', array(), $version, true );
+	wp_localize_script(
+		'broadside-theme',
+		'broadsideL10n',
+		array(
+			'menu'          => __( 'Menu', 'broadside' ),
+			'closeMenu'     => __( 'Close menu', 'broadside' ),
+			'switchToNight' => __( 'Switch to night edition', 'broadside' ),
+			'switchToDay'   => __( 'Switch to day edition', 'broadside' ),
+		)
+	);
+
+	if ( is_singular() && comments_open() && get_option( 'thread_comments' ) ) {
+		wp_enqueue_script( 'comment-reply' );
+	}
+}
+add_action( 'wp_enqueue_scripts', 'broadside_assets' );
+
+/**
+ * Resolve the colour mode before the first paint so the page never flashes.
+ */
+function broadside_color_mode_script() {
+	?>
+	<script>
+	( function () {
+		var mode = 'day';
+		try {
+			var stored = window.localStorage.getItem( 'broadside-color-mode' );
+			if ( stored === 'dark' || stored === 'day' ) {
+				mode = stored;
+			} else if ( window.matchMedia && window.matchMedia( '(prefers-color-scheme: dark)' ).matches ) {
+				mode = 'dark';
+			}
+		} catch ( error ) {}
+		document.documentElement.setAttribute( 'data-color-mode', mode );
+		document.documentElement.className += ' js';
+	}() );
+	</script>
+	<?php
+}
+add_action( 'wp_head', 'broadside_color_mode_script', 1 );
+
+/**
+ * Keep excerpts short enough for the ledger.
+ *
+ * @param int $length Word count.
+ * @return int
+ */
+function broadside_excerpt_length( $length ) {
+	return 34;
+}
+add_filter( 'excerpt_length', 'broadside_excerpt_length' );
+
+/**
+ * Replace the default excerpt ellipsis with a spaced one.
+ *
+ * @return string
+ */
+function broadside_excerpt_more() {
+	return '…';
+}
+add_filter( 'excerpt_more', 'broadside_excerpt_more' );
+
+/**
+ * Fall back to the page list when no top bar menu is assigned.
+ */
+function broadside_menu_fallback() {
+	$pages = wp_list_pages(
+		array(
+			'title_li' => '',
+			'depth'    => 1,
+			'echo'     => false,
+		)
+	);
+
+	echo '<ul class="menu">';
+	if ( $pages ) {
+		echo $pages; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Markup generated by WordPress.
+	} else {
+		printf(
+			'<li class="menu-item"><a href="%1$s">%2$s</a></li>',
+			esc_url( home_url( '/' ) ),
+			esc_html__( 'Home', 'broadside' )
+		);
+	}
+	echo '</ul>';
+}
+
+/**
+ * Archive pagination.
+ */
+function broadside_pagination() {
+	the_posts_pagination(
+		array(
+			'mid_size'           => 1,
+			'prev_text'          => __( 'Newer entries', 'broadside' ),
+			'next_text'          => __( 'Older entries', 'broadside' ),
+			'screen_reader_text' => __( 'Entries navigation', 'broadside' ),
+			'class'              => 'pagination',
+		)
+	);
+}
+
+/**
+ * Archive titles without the "Category:" prefix.
+ *
+ * @return string
+ */
+function broadside_archive_title() {
+	if ( is_category() ) {
+		return single_cat_title( '', false );
+	}
+	if ( is_tag() ) {
+		return single_tag_title( '', false );
+	}
+	if ( is_author() ) {
+		return get_the_author();
+	}
+	if ( is_year() ) {
+		return get_the_date( _x( 'Y', 'yearly archives date format', 'broadside' ) );
+	}
+	if ( is_month() ) {
+		return get_the_date( _x( 'F Y', 'monthly archives date format', 'broadside' ) );
+	}
+	if ( is_day() ) {
+		return get_the_date( _x( 'F j, Y', 'daily archives date format', 'broadside' ) );
+	}
+	if ( is_post_type_archive() ) {
+		return post_type_archive_title( '', false );
+	}
+	return __( 'Archive', 'broadside' );
+}
+
+/**
+ * Small label above an archive title.
+ *
+ * @return string
+ */
+function broadside_archive_kicker() {
+	if ( is_category() ) {
+		return __( 'Section', 'broadside' );
+	}
+	if ( is_tag() ) {
+		return __( 'Tag', 'broadside' );
+	}
+	if ( is_author() ) {
+		return __( 'Author', 'broadside' );
+	}
+	if ( is_date() ) {
+		return __( 'Archive', 'broadside' );
+	}
+	if ( is_post_type_archive() ) {
+		return __( 'Archive', 'broadside' );
+	}
+	return '';
+}
+
+/**
+ * Previous and next entry links on a single entry.
+ */
+function broadside_post_navigation() {
+	$previous = get_previous_post();
+	$next     = get_next_post();
+
+	if ( ! $previous && ! $next ) {
+		return;
+	}
+
+	$classes = 'postnav';
+	if ( ! $previous || ! $next ) {
+		$classes .= ' postnav--single';
+	}
+
+	echo '<nav class="' . esc_attr( $classes ) . '" aria-label="' . esc_attr__( 'Entries', 'broadside' ) . '">';
+
+	if ( $previous ) {
+		printf(
+			'<a class="postnav__link postnav__link--previous" href="%1$s"><span class="postnav__label">%2$s</span><span class="postnav__title">%3$s</span></a>',
+			esc_url( get_permalink( $previous ) ),
+			esc_html__( 'Previous entry', 'broadside' ),
+			esc_html( get_the_title( $previous ) )
+		);
+	}
+
+	if ( $next ) {
+		printf(
+			'<a class="postnav__link postnav__link--next" href="%1$s"><span class="postnav__label">%2$s</span><span class="postnav__title">%3$s</span></a>',
+			esc_url( get_permalink( $next ) ),
+			esc_html__( 'Next entry', 'broadside' ),
+			esc_html( get_the_title( $next ) )
+		);
+	}
+
+	echo '</nav>';
+}
+
+/**
+ * Fallback content for the left rail when no widgets are set up.
+ *
+ * Everything here is real site data: categories, entries and feed URLs.
+ */
+function broadside_rail_fallback() {
+	?>
+	<section class="widget widget_search">
+		<h2 class="widget__title"><?php esc_html_e( 'Search', 'broadside' ); ?></h2>
+		<?php get_search_form(); ?>
+	</section>
+
+	<?php
+	$categories = get_categories(
+		array(
+			'hide_empty' => true,
+			'number'     => 8,
+		)
+	);
+
+	if ( $categories ) :
+		?>
+		<section class="widget">
+			<h2 class="widget__title"><?php esc_html_e( 'Sections', 'broadside' ); ?></h2>
+			<ul class="widget__list">
+				<?php foreach ( $categories as $category ) : ?>
+					<li>
+						<a href="<?php echo esc_url( get_category_link( $category ) ); ?>"><?php echo esc_html( $category->name ); ?></a>
+						<span class="widget__count"><?php echo esc_html( number_format_i18n( $category->count ) ); ?></span>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		</section>
+		<?php
+	endif;
+
+	$recent = get_posts(
+		array(
+			'numberposts' => 5,
+			'post_status' => 'publish',
+		)
+	);
+
+	if ( $recent ) :
+		?>
+		<section class="widget">
+			<h2 class="widget__title"><?php esc_html_e( 'Recent entries', 'broadside' ); ?></h2>
+			<ul class="widget__list">
+				<?php foreach ( $recent as $recent_post ) : ?>
+					<li>
+						<a href="<?php echo esc_url( get_permalink( $recent_post ) ); ?>"><?php echo esc_html( get_the_title( $recent_post ) ); ?></a>
+						<time class="widget__date" datetime="<?php echo esc_attr( get_the_date( 'c', $recent_post ) ); ?>"><?php echo esc_html( get_the_date( '', $recent_post ) ); ?></time>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		</section>
+		<?php
+	endif;
+	?>
+
+	<section class="widget">
+		<h2 class="widget__title"><?php esc_html_e( 'Follow', 'broadside' ); ?></h2>
+		<ul class="widget__list">
+			<li><a href="<?php echo esc_url( get_feed_link() ); ?>"><?php esc_html_e( 'All entries feed', 'broadside' ); ?></a></li>
+			<li><a href="<?php echo esc_url( get_feed_link( 'comments_rss2' ) ); ?>"><?php esc_html_e( 'Comments feed', 'broadside' ); ?></a></li>
+		</ul>
+	</section>
+	<?php
+}

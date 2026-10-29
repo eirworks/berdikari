@@ -1,0 +1,44 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/theme.json",
+	"version": 2,
+	"settings": {
+		"appearanceTools": true,
+		"layout": {
+			"contentSize": "42rem",
+			"wideSize": "72rem"
+		},
+		"color": {
+			"defaultPalette": false,
+			"defaultGradients": false,
+			"palette": [
+				{ "slug": "paper", "color": "#f4efe2", "name": "Newsprint" },
+				{ "slug": "paper-raise", "color": "#faf6eb", "name": "Raised newsprint" },
+				{ "slug": "ink", "color": "#1a1712", "name": "Ink" },
+				{ "slug": "ink-soft", "color": "#57503f", "name": "Faded ink" },
+				{ "slug": "rule", "color": "#cfc6b0", "name": "Rule" },
+				{ "slug": "accent", "color": "#8f3b1b", "name": "Rust" }
+			]
+		},
+		"typography": {
+			"fontFamilies": [
+				{
+					"slug": "serif",
+					"name": "Broadside serif",
+					"fontFamily": "Georgia, \"Iowan Old Style\", \"Times New Roman\", serif"
+				},
+				{
+					"slug": "sans",
+					"name": "Broadside sans",
+					"fontFamily": "\"Helvetica Neue\", Helvetica, Arial, sans-serif"
+				}
+			],
+			"fontSizes": [
+				{ "slug": "small", "size": "0.8125rem", "name": "Small" },
+				{ "slug": "normal", "size": "1.0625rem", "name": "Body" },
+				{ "slug": "medium", "size": "1.3125rem", "name": "Medium" },
+				{ "slug": "large", "size": "1.875rem", "name": "Large" },
+				{ "slug": "x-large", "size": "2.75rem", "name": "Headline" }
+			]
+		}
+	}
+}

@@ -1,0 +1,18 @@
+/*
+Theme Name: Broadside
+Author: Eirworks
+Author URI: https://eirworks.com
+Description: A classic newspaper blog theme: masthead navigation, a left rail of sections, one strong serif reading column, and a colophon footer. Ships a night edition and print styles.
+Version: 1.0.0
+Requires at least: 6.0
+Tested up to: 6.6
+Requires PHP: 7.4
+License: GNU General Public License v2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: broadside
+Update URI: false
+Tags: blog, two-columns, left-sidebar, custom-menu, custom-logo, featured-images, threaded-comments, translation-ready, accessibility-ready, wide-blocks
+*/
+
+/* The stylesheet is split for readability; WordPress only requires this file to exist.
+   Actual rules live in assets/css/main.css. */
